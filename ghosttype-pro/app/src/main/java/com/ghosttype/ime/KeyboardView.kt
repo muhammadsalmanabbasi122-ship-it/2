@@ -705,13 +705,18 @@ class KeyboardView(
         }
         tile.addView(TextView(context).apply {
             text = tool.name
-            textSize = 11f
+            textSize = 12f
             gravity = Gravity.CENTER
-            setTextColor(theme.keyText)
-            setPadding(0, dp(5), 0, 0)
+            setTextColor(android.graphics.Color.argb(
+                230,
+                android.graphics.Color.red(theme.keyText),
+                android.graphics.Color.green(theme.keyText),
+                android.graphics.Color.blue(theme.keyText)
+            ))
+            setPadding(dp(2), dp(6), dp(2), 0)
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
-            setTypeface(null, Typeface.NORMAL)
+            setTypeface(null, Typeface.BOLD)
         }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         return tile
     }
