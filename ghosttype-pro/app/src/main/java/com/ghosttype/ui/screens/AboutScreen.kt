@@ -186,35 +186,43 @@ fun AboutScreen() {
             }
 
             // ── Connect section ────────────────────────────────
-            SectionLabel("Connect")
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SocialButton(
-                    emoji = "📢",
-                    title = "WhatsApp Channel",
-                    subtitle = "Updates & announcements",
-                    containerColor = Color(0xFF25D366).copy(alpha = 0.12f),
-                    contentColor = Color(0xFF25D366),
-                    borderColor = Color(0xFF25D366).copy(alpha = 0.3f)
-                ) { openUrl(ctx, waChannel.ifBlank { "https://whatsapp.com" }) }
+            SectionLabel("Connect with us")
 
-                SocialButton(
-                    emoji = "💬",
-                    title = "WhatsApp Community",
-                    subtitle = "Join the user community",
-                    containerColor = Color(0xFF128C7E).copy(alpha = 0.12f),
-                    contentColor = Color(0xFF25D366),
-                    borderColor = Color(0xFF128C7E).copy(alpha = 0.3f)
-                ) { openUrl(ctx, waCommunity.ifBlank { "https://whatsapp.com" }) }
+            // WhatsApp Channel
+            SocialCard(
+                iconEmoji = "📢",
+                platformName = "WhatsApp Channel",
+                handle = "GhostType Pro",
+                tagline = "Updates & announcements",
+                gradientStart = Color(0xFF25D366),
+                gradientEnd   = Color(0xFF128C7E),
+                badgeText = "CHANNEL",
+                onClick = { openUrl(ctx, waChannel.ifBlank { "https://whatsapp.com" }) }
+            )
 
-                SocialButton(
-                    emoji = "📸",
-                    title = "@urkashif_chand",
-                    subtitle = "Instagram",
-                    containerColor = Color(0xFFE1306C).copy(alpha = 0.10f),
-                    contentColor = Color(0xFFE1306C),
-                    borderColor = Color(0xFFE1306C).copy(alpha = 0.3f)
-                ) { openUrl(ctx, instaUrl.ifBlank { "https://instagram.com" }) }
-            }
+            // WhatsApp Community
+            SocialCard(
+                iconEmoji = "💬",
+                platformName = "WhatsApp Community",
+                handle = "ATF Team",
+                tagline = "Join the user community",
+                gradientStart = Color(0xFF128C7E),
+                gradientEnd   = Color(0xFF075E54),
+                badgeText = "COMMUNITY",
+                onClick = { openUrl(ctx, waCommunity.ifBlank { "https://whatsapp.com" }) }
+            )
+
+            // Instagram
+            SocialCard(
+                iconEmoji = "📸",
+                platformName = "Instagram",
+                handle = "@chand.tricker",
+                tagline = "Follow for updates",
+                gradientStart = Color(0xFFE1306C),
+                gradientEnd   = Color(0xFF833AB4),
+                badgeText = "FOLLOW",
+                onClick = { openUrl(ctx, instaUrl.ifBlank { "https://instagram.com" }) }
+            )
 
             // ── Legal ──────────────────────────────────────────
             Spacer(Modifier.height(4.dp))
@@ -266,49 +274,100 @@ private fun VersionChip(text: String) {
 }
 
 @Composable
-private fun SocialButton(
-    emoji: String,
-    title: String,
-    subtitle: String,
-    containerColor: Color,
-    contentColor: Color,
-    borderColor: Color,
+private fun SocialCard(
+    iconEmoji: String,
+    platformName: String,
+    handle: String,
+    tagline: String,
+    gradientStart: Color,
+    gradientEnd: Color,
+    badgeText: String,
     onClick: () -> Unit
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(containerColor)
-            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
-            .then(Modifier.padding(0.dp)),
-        verticalAlignment = Alignment.CenterVertically
+            .clip(RoundedCornerShape(18.dp))
+            .background(
+                Brush.horizontalGradient(
+                    listOf(gradientStart.copy(alpha = 0.18f), gradientEnd.copy(alpha = 0.10f))
+                )
+            )
+            .border(
+                1.5.dp,
+                Brush.horizontalGradient(listOf(gradientStart.copy(alpha = 0.6f), gradientEnd.copy(alpha = 0.3f))),
+                RoundedCornerShape(18.dp)
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
-        TextButton(
-            onClick = onClick,
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.textButtonColors(contentColor = contentColor),
-            modifier = Modifier.fillMaxWidth()
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            // Icon circle with gradient ring
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(gradientStart.copy(alpha = 0.30f), gradientEnd.copy(alpha = 0.20f))
+                        )
+                    )
+                    .border(
+                        1.dp,
+                        Brush.verticalGradient(listOf(gradientStart.copy(alpha = 0.7f), gradientEnd.copy(alpha = 0.4f))),
+                        RoundedCornerShape(14.dp)
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(contentColor.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
+                Text(iconEmoji, fontSize = 26.sp)
+            }
+
+            // Text info
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(emoji, fontSize = 20.sp)
+                    Text(
+                        platformName,
+                        color = gradientStart,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(gradientStart.copy(alpha = 0.18f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(badgeText, color = gradientStart, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold)
+                    }
                 }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(title, color = contentColor, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(subtitle, color = contentColor.copy(alpha = 0.7f), fontSize = 12.sp)
-                }
-                Text("→", color = contentColor, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    handle,
+                    color = Color.White.copy(alpha = 0.90f),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp
+                )
+                Text(
+                    tagline,
+                    color = Color.White.copy(alpha = 0.55f),
+                    fontSize = 11.sp
+                )
+            }
+
+            // Arrow
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(gradientStart.copy(alpha = 0.20f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("→", color = gradientStart, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
             }
         }
     }
