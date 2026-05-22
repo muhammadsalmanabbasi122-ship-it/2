@@ -303,4 +303,7 @@ dependencies {
 
     // v1.9 — used by ApprovalGate to fetch the GitHub-hosted Users.json.
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Coil — URL image loading for Compose
+    implementation("io.coil-kt:coil-compose:2.6.0")
 }

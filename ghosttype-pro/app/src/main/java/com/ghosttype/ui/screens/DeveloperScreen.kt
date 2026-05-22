@@ -17,8 +17,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import coil.compose.SubcomposeAsyncImage
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,7 +60,7 @@ fun DeveloperScreen() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Avatar circle
+                // Avatar — loads logo from CDN, falls back to "CT" text
                 Box(
                     modifier = Modifier
                         .size(96.dp)
@@ -71,7 +73,22 @@ fun DeveloperScreen() {
                         .border(2.5.dp, Orange.copy(alpha = 0.6f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("CT", color = Orange, fontWeight = FontWeight.ExtraBold, fontSize = 30.sp, fontFamily = FontFamily.Default)
+                    SubcomposeAsyncImage(
+                        model = "https://cdn.jsdelivr.net/gh/chanddark/Image1/images/icon.png",
+                        contentDescription = "CHAND TRICKER logo",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                        loading = {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("CT", color = Orange, fontWeight = FontWeight.ExtraBold, fontSize = 30.sp, fontFamily = FontFamily.Default)
+                            }
+                        },
+                        error = {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("CT", color = Orange, fontWeight = FontWeight.ExtraBold, fontSize = 30.sp, fontFamily = FontFamily.Default)
+                            }
+                        }
+                    )
                 }
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
