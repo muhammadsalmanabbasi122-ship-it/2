@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "approved": [
+    { "android_id": "abcd1234deadbeef", "name": "CHAND" },
+    { "android_id": "1111aaaa2222bbbb", "name": "Test User" }
+  ],
+  "blocked": []
+}
