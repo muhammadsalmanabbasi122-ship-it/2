@@ -90,7 +90,7 @@ object AutoTypeEngine {
         stop()
         val prefs = SettingsStore.prefs(ctx)
         val delaySec = prefs.getInt(SettingsStore.KEY_AT_DELAY, 5).coerceIn(1, 60)
-        val loop = prefs.getBoolean(SettingsStore.KEY_AT_LOOP, false)
+        val loop = true
         // ALWAYS use direct (per-character IME typing). Paste mode is removed —
         // paste was the source of the "loop me copy" bug where the same line was
         // re-copied to clipboard each cycle without ever being typed.
