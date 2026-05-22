@@ -10,7 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,6 +24,13 @@ import coil.compose.SubcomposeAsyncImage
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ghosttype.ime.AutoTypeEngine
+import com.ghosttype.ime.AutoTypeForegroundService
+import com.ghosttype.ime.FloatingPointerService
+import com.ghosttype.utils.SettingsStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 private val Orange  = Color(0xFFFF8C00)
 private val GreenWa = Color(0xFF25D366)
@@ -249,6 +256,9 @@ fun DeveloperScreen() {
                 )
             }
 
+            // ── Reset All ─────────────────────────────────────
+            ResetAllCard(ctx = ctx)
+
             // ── Footer ────────────────────────────────────────
             Column(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
@@ -257,6 +267,221 @@ fun DeveloperScreen() {
             ) {
                 Text("Made with ❤️ by CHAND TRICKER", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, textAlign = TextAlign.Center)
                 Text("ATF Team · GhostType Pro", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResetAllCard(ctx: android.content.Context) {
+    val RedReset = Color(0xFFFF3B30)
+    var showDialog by remember { mutableStateOf(false) }
+    var resetDone  by remember { mutableStateOf(false) }
+
+    // Confirmation dialog
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            containerColor   = MaterialTheme.colorScheme.surface,
+            shape            = RoundedCornerShape(18.dp),
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(RedReset.copy(alpha = 0.12f))
+                        .border(1.5.dp, RedReset.copy(alpha = 0.5f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) { Text("⚠️", fontSize = 26.sp) }
+            },
+            title = {
+                Text(
+                    "Reset App?",
+                    color = RedReset,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp,
+                    textAlign = TextAlign.Center
+                )
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        "Ye action puri app ko factory reset kar dega:",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(RedReset.copy(alpha = 0.07f))
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            "🎨 Theme, colors, background image",
+                            "⌨️ Keyboard size, font, haptic, sound",
+                            "🤖 Auto-Type settings & target name",
+                            "🎯 Pointer position & settings",
+                            "📋 Clipboard auto-delete & settings",
+                            "👤 Plans, name, active plan",
+                            "🔧 All other app preferences"
+                        ).forEach { item ->
+                            Text(item, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
+                        }
+                    }
+                    Text(
+                        "Yeh undo nahi ho sakta!",
+                        color = RedReset,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        // Stop all running services first
+                        try { AutoTypeEngine.stop() } catch (_: Throwable) {}
+                        try { AutoTypeForegroundService.stop(ctx) } catch (_: Throwable) {}
+                        try { FloatingPointerService.stop(ctx) } catch (_: Throwable) {}
+                        // Wipe all SharedPreferences
+                        SettingsStore.resetAll(ctx)
+                        // Clear clipboard DB on background thread
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                com.ghosttype.data.db.AppDatabase.getInstance(ctx).clipboardDao().let { dao ->
+                                    dao.allOnce().forEach { dao.delete(it) }
+                                }
+                            } catch (_: Throwable) {}
+                        }
+                        showDialog = false
+                        resetDone  = true
+                    },
+                    shape  = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RedReset,
+                        contentColor   = Color.White
+                    )
+                ) { Text("Haan, Reset Karo", fontWeight = FontWeight.ExtraBold) }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showDialog = false },
+                    shape   = RoundedCornerShape(10.dp),
+                    colors  = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) { Text("Cancel") }
+            }
+        )
+    }
+
+    // Success banner (shown briefly after reset)
+    if (resetDone) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFF4CAF50).copy(alpha = 0.12f))
+                .border(1.dp, Color(0xFF4CAF50).copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                .padding(14.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "✅ App reset ho gaya! Keyboard dobara open karo — defaults apply ho jayenge.",
+                color = Color(0xFF4CAF50),
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                lineHeight = 19.sp
+            )
+        }
+    }
+
+    // Reset card UI
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(RedReset.copy(alpha = 0.06f))
+            .border(
+                1.5.dp,
+                RedReset.copy(alpha = if (resetDone) 0.15f else 0.30f),
+                RoundedCornerShape(16.dp)
+            )
+            .padding(18.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(RedReset.copy(alpha = 0.14f))
+                        .border(1.dp, RedReset.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) { Text("🔄", fontSize = 22.sp) }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
+                    Text("Reset All Settings", color = RedReset, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                    Text("Puri app factory reset — sab kuch saaf", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                }
+            }
+
+            // What gets reset list
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                listOf(
+                    "Theme & colors" to "🎨",
+                    "Keyboard settings" to "⌨️",
+                    "Auto-Type & Pointer" to "🤖",
+                    "Clipboard & Plans" to "📋",
+                    "All saved preferences" to "⚙️"
+                ).forEach { (label, emoji) ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(emoji, fontSize = 14.sp)
+                        Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .clip(CircleShape)
+                                .background(RedReset.copy(alpha = 0.45f))
+                        )
+                    }
+                }
+            }
+
+            // Reset button
+            Button(
+                onClick = { showDialog = true },
+                shape   = RoundedCornerShape(12.dp),
+                colors  = ButtonDefaults.buttonColors(
+                    containerColor = RedReset,
+                    contentColor   = Color.White
+                ),
+                modifier = Modifier.fillMaxWidth().height(50.dp)
+            ) {
+                Text("🔄  Reset All Settings", fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
             }
         }
     }

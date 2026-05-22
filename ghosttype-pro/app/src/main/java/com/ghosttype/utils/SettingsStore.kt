@@ -130,4 +130,16 @@ object SettingsStore {
     const val KEY_ACTIVE_PLAN_NAME = "active_plan_name"      // e.g. "Quarterly"
     const val KEY_ACTIVE_PLAN_PRICE = "active_plan_price"    // e.g. "Rs 120"
     const val KEY_ACTIVE_PLAN_DURATION = "active_plan_duration" // e.g. "3 Months"
+
+    /**
+     * Wipes every key in SharedPreferences — equivalent to a factory reset
+     * for all app settings. After calling this, GhostTypeApp.applyDefaultsOnFirstRun
+     * will re-apply the curated defaults on the very next keyboard open because
+     * KEY_DEFAULTS_APPLIED is gone too.
+     *
+     * Does NOT delete the Room clipboard DB — call resetClipboard() for that.
+     */
+    fun resetAll(ctx: Context) {
+        prefs(ctx).edit().clear().apply()
+    }
 }
