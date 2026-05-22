@@ -33,6 +33,6 @@ object DeviceId {
         val hwSig = "${Build.MANUFACTURER}|${Build.MODEL}|${Build.DEVICE}|${Build.BRAND}"
         val seed = "ghosttype_devid_v1::$androidId::$hwSig".toByteArray(Charsets.UTF_8)
         val hash = MessageDigest.getInstance("SHA-256").digest(seed)
-        return hash.joinToString("") { "%02x".format(it) }.substring(0, 16)
+        return "CHAND-key-TRICKER-" + hash.joinToString("") { "%02x".format(it) }.substring(0, 16)
     }
 }
