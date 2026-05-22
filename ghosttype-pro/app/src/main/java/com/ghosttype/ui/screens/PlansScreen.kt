@@ -74,8 +74,17 @@ fun PlansScreen() {
     var userName by remember {
         mutableStateOf(prefs.getString(SettingsStore.KEY_PLANS_USER_NAME, "") ?: "")
     }
+    var nameError by remember { mutableStateOf(false) }
+    var planError  by remember { mutableStateOf(false) }
 
     val readyToSend = selectedPlan != null && userName.isNotBlank()
+
+    val waMsg = if (readyToSend) buildString {
+        append("*GhostType Pro — Plan Request*\n\n")
+        append("👤 *Name:* $userName\n")
+        append("🔑 *Key:* $deviceId\n")
+        append("📦 *Plan:* ${selectedPlan!!.name} (${selectedPlan!!.duration}) — ${selectedPlan!!.price}")
+    } else ""
 
     Column(
         modifier = Modifier
@@ -88,13 +97,109 @@ fun PlansScreen() {
         // ── Title ─────────────────────────────────────────────
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("Plans", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp)
-            Text("Select a plan, enter your name, and send the request.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+            Text("Complete all steps below then send your request to CHAND.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
         }
 
         // ══════════════════════════════════════════════════════
-        // STEP 1 — Select plan
+        // STEP 1 — Your Device Key
         // ══════════════════════════════════════════════════════
-        StepHeader(number = "1", title = "Select a Plan", done = selectedPlan != null)
+        StepHeader(number = "1", title = "Your Device Key", done = true)
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(1.dp, Orange.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("🔑", fontSize = 22.sp)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Device Key", color = Orange, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text(
+                    deviceId,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp
+                )
+                Text("Send this key to CHAND for activation", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+            }
+        }
+
+        // ══════════════════════════════════════════════════════
+        // STEP 2 — Your Name (required)
+        // ══════════════════════════════════════════════════════
+        StepHeader(number = "2", title = "Your Name", done = userName.isNotBlank())
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .border(
+                    1.dp,
+                    when {
+                        nameError          -> Color(0xFFE53935).copy(alpha = 0.7f)
+                        userName.isNotBlank() -> Color(0xFF4CAF50).copy(alpha = 0.5f)
+                        else               -> MaterialTheme.colorScheme.outlineVariant
+                    },
+                    RoundedCornerShape(14.dp)
+                )
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("Your Name", color = Orange, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("*required*", color = Color(0xFFE53935), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            }
+            OutlinedTextField(
+                value = userName,
+                onValueChange = {
+                    userName = it
+                    nameError = false
+                    prefs.edit().putString(SettingsStore.KEY_PLANS_USER_NAME, it).apply()
+                },
+                placeholder = { Text("e.g. Ali Hassan", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                singleLine = true,
+                isError = nameError,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Orange,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    errorBorderColor = Color(0xFFE53935),
+                    cursorColor = Orange
+                ),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (nameError) {
+                Text("⚠ Please enter your name", color = Color(0xFFE53935), fontSize = 12.sp)
+            }
+        }
+
+        // ══════════════════════════════════════════════════════
+        // STEP 3 — Choose a Plan (required)
+        // ══════════════════════════════════════════════════════
+        StepHeader(number = "3", title = "Choose a Plan", done = selectedPlan != null)
+
+        if (planError && selectedPlan == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFFE53935).copy(alpha = 0.10f))
+                    .border(1.dp, Color(0xFFE53935).copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                    .padding(10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("⚠ Please select a plan", color = Color(0xFFE53935), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
 
         PLANS.forEach { plan ->
             val isSelected = selectedPlan?.name == plan.name
@@ -103,6 +208,7 @@ fun PlansScreen() {
                 isSelected = isSelected,
                 onClick = {
                     selectedPlan = plan
+                    planError = false
                     prefs.edit()
                         .putString(SettingsStore.KEY_ACTIVE_PLAN_NAME, plan.name)
                         .putString(SettingsStore.KEY_ACTIVE_PLAN_PRICE, plan.price)
@@ -113,91 +219,31 @@ fun PlansScreen() {
         }
 
         // ══════════════════════════════════════════════════════
-        // STEP 2 — Your Info
+        // STEP 4 — Send to CHAND
         // ══════════════════════════════════════════════════════
-        StepHeader(number = "2", title = "Your Info", done = userName.isNotBlank())
+        StepHeader(number = "4", title = "Send to CHAND", done = false)
 
-        // Name input
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(MaterialTheme.colorScheme.surface)
-                .border(
-                    1.dp,
-                    if (userName.isNotBlank()) Orange.copy(alpha = 0.5f)
-                    else MaterialTheme.colorScheme.outlineVariant,
-                    RoundedCornerShape(14.dp)
-                )
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text("Your Name", color = Orange, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            OutlinedTextField(
-                value = userName,
-                onValueChange = {
-                    userName = it
-                    prefs.edit().putString(SettingsStore.KEY_PLANS_USER_NAME, it).apply()
-                },
-                placeholder = { Text("e.g. Ali Hassan", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Orange,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                    cursorColor = Orange
-                ),
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        // Device key (read-only)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Text("🔑", fontSize = 18.sp)
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Device Key (auto-filled)", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
-                Text(deviceId, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+        // Summary card — visible when both filled
+        AnimatedVisibility(visible = readyToSend) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFF4CAF50).copy(alpha = 0.08f))
+                    .border(1.dp, Color(0xFF4CAF50).copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("✅ Ready to Send", color = Color(0xFF4CAF50), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                HorizontalDivider(color = Color(0xFF4CAF50).copy(alpha = 0.2f), thickness = 0.5.dp)
+                InfoRow(label = "Name", value = userName)
+                InfoRow(label = "Key", value = deviceId)
+                InfoRow(label = "Plan", value = "${selectedPlan?.name} (${selectedPlan?.duration}) — ${selectedPlan?.price}")
             }
         }
 
-        // ══════════════════════════════════════════════════════
-        // STEP 3 — Send Request
-        // ══════════════════════════════════════════════════════
-        StepHeader(number = "3", title = "Send Request", done = false)
-
-        // Selected plan preview (shown when plan chosen)
-        AnimatedVisibility(visible = selectedPlan != null) {
-            selectedPlan?.let { plan ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(plan.accent.copy(alpha = 0.10f))
-                        .border(1.dp, plan.accent.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(plan.emoji, fontSize = 20.sp)
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Selected: ${plan.name} (${plan.duration})", color = plan.accent, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text("Price: ${plan.price}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                    }
-                    Text("✓", color = plan.accent, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-                }
-            }
-        }
-
-        if (!readyToSend) {
+        // Hint when not ready
+        AnimatedVisibility(visible = !readyToSend) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -208,9 +254,9 @@ fun PlansScreen() {
             ) {
                 Text(
                     when {
-                        selectedPlan == null && userName.isBlank() -> "⚠ Select a plan and enter your name"
-                        selectedPlan == null -> "⚠ Select a plan above"
-                        else -> "⚠ Enter your name above"
+                        userName.isBlank() && selectedPlan == null -> "Complete Step 2 (name) and Step 3 (plan) first"
+                        userName.isBlank() -> "Complete Step 2 — enter your name"
+                        else -> "Complete Step 3 — select a plan"
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 13.sp,
@@ -219,15 +265,7 @@ fun PlansScreen() {
             }
         }
 
-        // 3 send buttons
-        val plan  = selectedPlan
-        val waMsg = if (plan != null && userName.isNotBlank()) buildString {
-            append("*GhostType Pro — Plan Request*\n\n")
-            append("👤 *Name:* $userName\n")
-            append("🔑 *Key:* $deviceId\n")
-            append("📦 *Plan:* ${plan.name} (${plan.duration}) — ${plan.price}")
-        } else ""
-
+        // 3 Send buttons
         SendButton(
             emoji = "📲",
             label = "Send on WhatsApp",
@@ -235,6 +273,7 @@ fun PlansScreen() {
             color = GreenWa,
             enabled = readyToSend,
             onClick = {
+                if (!readyToSend) { nameError = userName.isBlank(); planError = selectedPlan == null; return@SendButton }
                 val encoded = Uri.encode(waMsg)
                 ctx.openUrl("https://wa.me/923017787729?text=$encoded")
             }
@@ -247,8 +286,9 @@ fun PlansScreen() {
             color = BlueTg,
             enabled = readyToSend,
             onClick = {
+                if (!readyToSend) { nameError = userName.isBlank(); planError = selectedPlan == null; return@SendButton }
                 val encoded = Uri.encode(waMsg)
-                ctx.openUrl("https://t.me/CHANDTRICKER")
+                ctx.openUrl("https://t.me/CHANDTRICKER?text=$encoded")
             }
         )
 
@@ -259,13 +299,13 @@ fun PlansScreen() {
             color = PinkIg,
             enabled = readyToSend,
             onClick = {
+                if (!readyToSend) { nameError = userName.isBlank(); planError = selectedPlan == null; return@SendButton }
                 ctx.openUrl("https://www.instagram.com/chand.tricker?igsh=c2dhbHFyZXdrZmpp")
             }
         )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
 
-        // Info note
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -282,6 +322,15 @@ fun PlansScreen() {
         }
 
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("$label:", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.width(40.dp))
+        Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -346,7 +395,6 @@ private fun PlanCard(plan: Plan, isSelected: Boolean, onClick: () -> Unit) {
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Top row
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -384,7 +432,6 @@ private fun PlanCard(plan: Plan, isSelected: Boolean, onClick: () -> Unit) {
 
         HorizontalDivider(color = borderColor.copy(alpha = 0.4f), thickness = 0.5.dp)
 
-        // Perks
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             plan.perks.forEach { perk ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -394,7 +441,6 @@ private fun PlanCard(plan: Plan, isSelected: Boolean, onClick: () -> Unit) {
             }
         }
 
-        // Tap to select hint
         if (!isSelected) {
             Box(
                 modifier = Modifier
