@@ -95,7 +95,7 @@ val generateObfConstants = tasks.register("generateObfConstants") {
         val pkgName = "com.ghosttype"
         val plaintexts = linkedMapOf(
             "APPROVAL_URL"     to "https://raw.githubusercontent.com/chandtricker-2/keyboardautotyper-approvals/refs/heads/main/users.json",
-            "WHATSAPP_NUMBER"  to "923001677853",
+            "WHATSAPP_NUMBER"  to "923017787729",
             "OWNER_NAME"       to "CHAND",
             "OWNER_TEAM"       to "ATF Team",
             "INSTAGRAM_URL"    to "https://www.instagram.com/chand.tricker?igsh=c2dhbHFyZXdrZmpp",

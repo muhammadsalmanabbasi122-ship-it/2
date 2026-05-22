@@ -128,7 +128,7 @@ fun LockScreen(state: ApprovalGate.State, onRecheck: suspend () -> Unit) {
 
                     Button(
                         onClick = {
-                            val url = "https://wa.me/${wa.ifBlank { "923001677853" }}?text=Approval%20request%0AID%3A%20$id"
+                            val url = "https://wa.me/${wa.ifBlank { "923017787729" }}?text=Approval%20request%0AID%3A%20$id"
                             try { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
                             catch (_: Exception) { Toast.makeText(ctx, "WhatsApp not installed", Toast.LENGTH_SHORT).show() }
                         },
