@@ -355,7 +355,7 @@ private fun ResetAllCard(ctx: android.content.Context) {
                         // Clear clipboard DB on background thread
                         CoroutineScope(Dispatchers.IO).launch {
                             try {
-                                com.ghosttype.data.db.AppDatabase.getInstance(ctx).clipboardDao().let { dao ->
+                                com.ghosttype.data.db.AppDatabase.get(ctx).clipboardDao().let { dao ->
                                     dao.allOnce().forEach { dao.delete(it) }
                                 }
                             } catch (_: Throwable) {}
