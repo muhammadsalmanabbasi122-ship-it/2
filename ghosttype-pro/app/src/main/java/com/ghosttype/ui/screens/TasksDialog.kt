@@ -23,9 +23,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.ghosttype.utils.SettingsStore
 
-private val Orange  = Color(0xFFFF8C00)
-private val GreenWa = Color(0xFF25D366)
+private val Orange      = Color(0xFFFF8C00)
+private val GreenWa     = Color(0xFF25D366)
 private val GreenWaDark = Color(0xFF128C7E)
+private val RedYt       = Color(0xFFFF0000)
+private val RedYtDark   = Color(0xFFCC0000)
 
 @Composable
 fun TasksDialog(onUnlocked: () -> Unit) {
@@ -33,6 +35,9 @@ fun TasksDialog(onUnlocked: () -> Unit) {
     val prefs = SettingsStore.prefs(ctx)
 
     var waJoined by remember { mutableStateOf(false) }
+    var ytJoined by remember { mutableStateOf(false) }
+
+    val bothDone = waJoined && ytJoined
 
     Dialog(
         onDismissRequest = {},
@@ -89,7 +94,7 @@ fun TasksDialog(onUnlocked: () -> Unit) {
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        "Complete the task below to get free access",
+                        "Complete 2 quick tasks to get free access",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
@@ -207,10 +212,118 @@ fun TasksDialog(onUnlocked: () -> Unit) {
                     }
                 }
 
+                // ── YouTube Task Card ──────────────────────────
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(RedYt.copy(alpha = if (ytJoined) 0.18f else 0.09f),
+                                       RedYtDark.copy(alpha = if (ytJoined) 0.12f else 0.05f))
+                            )
+                        )
+                        .border(
+                            1.5.dp,
+                            Brush.horizontalGradient(
+                                listOf(RedYt.copy(alpha = if (ytJoined) 0.7f else 0.35f),
+                                       RedYtDark.copy(alpha = if (ytJoined) 0.4f else 0.2f))
+                            ),
+                            RoundedCornerShape(18.dp)
+                        )
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        // Icon
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(RedYt.copy(alpha = 0.30f), RedYtDark.copy(alpha = 0.20f))
+                                    )
+                                )
+                                .border(
+                                    1.dp,
+                                    Brush.verticalGradient(listOf(RedYt.copy(alpha = 0.7f), RedYtDark.copy(alpha = 0.4f))),
+                                    RoundedCornerShape(14.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(if (ytJoined) "✅" else "▶️", fontSize = 26.sp)
+                        }
+
+                        // Text
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(
+                                "Subscribe on YouTube",
+                                color = RedYt,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 15.sp
+                            )
+                            Text(
+                                "@chandtricker",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp
+                            )
+                            AnimatedVisibility(visible = ytJoined) {
+                                Text(
+                                    "✓ Subscribed successfully",
+                                    color = RedYt,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        // Button
+                        AnimatedContent(targetState = ytJoined, label = "yt_btn") { joined ->
+                            if (joined) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(RedYt.copy(alpha = 0.15f))
+                                        .border(1.dp, RedYt.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("Done ✓", color = RedYt, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        try {
+                                            ctx.startActivity(
+                                                Intent(Intent.ACTION_VIEW,
+                                                    Uri.parse("https://www.youtube.com/@chandtricker"))
+                                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            )
+                                        } catch (_: Exception) {}
+                                        ytJoined = true
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = RedYt,
+                                        contentColor = Color.White
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                    modifier = Modifier.height(36.dp)
+                                ) {
+                                    Text("Subscribe", fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
 
                 // ── Unlock button ──────────────────────────────
-                AnimatedContent(targetState = waJoined, label = "unlock_btn") { ready ->
+                AnimatedContent(targetState = bothDone, label = "unlock_btn") { ready ->
                     Button(
                         onClick = {
                             if (ready) {
@@ -229,16 +342,20 @@ fun TasksDialog(onUnlocked: () -> Unit) {
                         modifier = Modifier.fillMaxWidth().height(54.dp)
                     ) {
                         Text(
-                            if (ready) "🔓  Unlock GhostType Pro" else "Join WhatsApp to unlock",
+                            if (ready) "🔓  Unlock GhostType Pro" else "Complete both tasks to unlock",
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 15.sp
                         )
                     }
                 }
 
-                if (!waJoined) {
+                AnimatedVisibility(visible = !bothDone) {
                     Text(
-                        "Tap Join above, then come back to unlock",
+                        when {
+                            !waJoined && !ytJoined -> "Join WhatsApp and subscribe on YouTube to unlock"
+                            !waJoined -> "Join WhatsApp channel to unlock"
+                            else -> "Subscribe on YouTube to unlock"
+                        },
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         fontSize = 11.sp,
                         textAlign = TextAlign.Center
