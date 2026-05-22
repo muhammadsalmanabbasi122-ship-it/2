@@ -599,33 +599,32 @@ class KeyboardView(
      */
     private fun rebuildTools() {
         panelContainer.removeAllViews()
-        val pad = dp(10)
+        val gapOuter = dp(12)
         val keyHeight = prefs.getInt(SettingsStore.KEY_KEY_HEIGHT_DP, 50).coerceIn(36, 80)
         val totalH = dp(keyHeight) * 5
 
         val root = LinearLayout(context).apply {
             orientation = VERTICAL
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, totalH)
-            setPadding(pad, pad, pad, pad)
+            setPadding(gapOuter, dp(10), gapOuter, dp(10))
             setBackgroundColor(theme.keyboardBg)
         }
 
-        // Header strip
+        // ── "Tools" header ────────────────────────────────────
         root.addView(TextView(context).apply {
             text = "Tools"
             setTextColor(theme.accent)
-            textSize = 16f
+            textSize = 18f
             setTypeface(null, Typeface.BOLD)
-            setPadding(dp(2), 0, 0, dp(6))
+            setPadding(dp(4), 0, 0, dp(10))
         }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
-        // 4-column grid. Each row is a horizontal LinearLayout with equal
-        // weighted children; rows themselves have equal weight inside the
-        // grid container so vertical space distributes evenly even when the
-        // last row has fewer than 4 entries.
+        // ── 4-column icon-only grid ────────────────────────────
         val tools = allToolActions()
-        val cols = 4
-        val rows = (tools.size + cols - 1) / cols
+        val cols  = 4
+        val rows  = (tools.size + cols - 1) / cols
+        val gapTile = dp(6)
+
         val grid = LinearLayout(context).apply {
             orientation = VERTICAL
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f)
@@ -638,86 +637,98 @@ class KeyboardView(
             for (c in 0 until cols) {
                 val idx = r * cols + c
                 val params = LayoutParams(0, LayoutParams.MATCH_PARENT, 1f).apply {
-                    setMargins(dp(4), dp(4), dp(4), dp(4))
+                    setMargins(gapTile, gapTile, gapTile, gapTile)
                 }
-                if (idx < tools.size) {
-                    rowView.addView(buildToolTile(tools[idx]), params)
-                } else {
-                    // Empty placeholder keeps remaining tiles in their
-                    // grid columns instead of stretching to fill.
-                    rowView.addView(View(context), params)
-                }
+                if (idx < tools.size) rowView.addView(buildToolTile(tools[idx]), params)
+                else                   rowView.addView(View(context), params)
             }
             grid.addView(rowView)
         }
         root.addView(grid)
 
-        // Back button — explicit return to the keys panel since the user
-        // is now off the keyboard layout entirely.
-        root.addView(pillBtn("⌨ Back to keyboard") { showKeysPanel() },
-            LayoutParams(LayoutParams.MATCH_PARENT, dp(40)).apply { topMargin = dp(6) })
+        // ── "Back to keyboard" pill ───────────────────────────
+        val pillBg = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            cornerRadius = dp(24).toFloat()
+            // White-ish pill — slightly tinted with keyboard bg so it works
+            // on both light and dark themes: blend white at 85% over bg.
+            val r = ((android.graphics.Color.red(theme.keyboardBg) * 0.30f) + (255 * 0.70f)).toInt().coerceIn(0, 255)
+            val g = ((android.graphics.Color.green(theme.keyboardBg) * 0.30f) + (255 * 0.70f)).toInt().coerceIn(0, 255)
+            val b = ((android.graphics.Color.blue(theme.keyboardBg) * 0.30f) + (255 * 0.70f)).toInt().coerceIn(0, 255)
+            setColor(android.graphics.Color.rgb(r, g, b))
+        }
+        root.addView(TextView(context).apply {
+            text = "⌨  Back to keyboard"
+            setTextColor(theme.accent)
+            setTypeface(null, Typeface.BOLD)
+            textSize = 14f
+            gravity = Gravity.CENTER
+            background = pillBg
+            isClickable = true; isFocusable = true
+            setOnClickListener { showKeysPanel() }
+        }, LayoutParams(LayoutParams.MATCH_PARENT, dp(48)).apply { topMargin = dp(8) })
 
         panelContainer.addView(root)
     }
 
     /**
-     * Build a single tool tile (icon centered over a small label) for the
-     * tools grid. Styled like a standard key (rounded background, theme
-     * colors) so the panel feels visually consistent with the keyboard
-     * itself.
+     * Single tool tile — icon-only, large centered icon, no text label.
+     * Rounded square tile with accent tint background matching the screenshot.
      */
     private fun buildToolTile(tool: ToolAction): View {
-        // Tile background: theme accent at ~14% alpha for the Gboard-style
-        // tinted panel look (image ref). Falls back gracefully on dark themes.
         val accentArgb = theme.accent
+
+        // Tile bg: accent color at ~22% alpha — visible but soft on pastel themes
         val tileBg = android.graphics.drawable.GradientDrawable().apply {
             shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            cornerRadius = dp(14).toFloat()
+            cornerRadius = dp(16).toFloat()
             setColor(android.graphics.Color.argb(
-                36,
+                56,
                 android.graphics.Color.red(accentArgb),
                 android.graphics.Color.green(accentArgb),
                 android.graphics.Color.blue(accentArgb)
             ))
         }
-        val tile = LinearLayout(context).apply {
-            orientation = VERTICAL
-            gravity = Gravity.CENTER
-            background = tileBg
-            setPadding(dp(6), dp(10), dp(6), dp(10))
-            isClickable = true
-            isFocusable = true
-            setOnClickListener { tool.onClick(it) }
+
+        // Pressed state: slightly deeper tint
+        val pressedBg = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            cornerRadius = dp(16).toFloat()
+            setColor(android.graphics.Color.argb(
+                100,
+                android.graphics.Color.red(accentArgb),
+                android.graphics.Color.green(accentArgb),
+                android.graphics.Color.blue(accentArgb)
+            ))
         }
-        // Clean outlined vector icon (tinted with accent color)
-        if (tool.iconRes != null) {
-            tile.addView(ImageView(context).apply {
+        val stateList = android.graphics.drawable.StateListDrawable().apply {
+            addState(intArrayOf(android.R.attr.state_pressed), pressedBg)
+            addState(intArrayOf(), tileBg)
+        }
+
+        val tile = FrameLayout(context).apply {
+            background = stateList
+            isClickable = true; isFocusable = true
+            setOnClickListener { doFeedback(this); tool.onClick(it) }
+        }
+
+        // Icon: vector drawable tinted with accent, or emoji text fallback
+        val iconView: View = if (tool.iconRes != null) {
+            ImageView(context).apply {
                 setImageResource(tool.iconRes)
                 setColorFilter(accentArgb)
                 scaleType = ImageView.ScaleType.FIT_CENTER
-            }, LayoutParams(dp(30), dp(30)))
+            }
         } else {
-            tile.addView(TextView(context).apply {
+            TextView(context).apply {
                 text = tool.icon
-                textSize = 22f
+                textSize = 26f
                 gravity = Gravity.CENTER
-            }, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
+            }
         }
-        tile.addView(TextView(context).apply {
-            text = tool.name
-            textSize = 12f
+        tile.addView(iconView, FrameLayout.LayoutParams(dp(32), dp(32)).apply {
             gravity = Gravity.CENTER
-            setTextColor(android.graphics.Color.argb(
-                230,
-                android.graphics.Color.red(theme.keyText),
-                android.graphics.Color.green(theme.keyText),
-                android.graphics.Color.blue(theme.keyText)
-            ))
-            setPadding(dp(2), dp(6), dp(2), 0)
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            setTypeface(null, Typeface.BOLD)
-        }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        })
         return tile
     }
 
