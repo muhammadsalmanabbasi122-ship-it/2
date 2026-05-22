@@ -220,10 +220,11 @@ fun AppRoot(
     onResumeAutoType: () -> Unit,
     onStop: () -> Unit
 ) {
-    val tabs = listOf("Home", "Plans", "Auto-Type", "Clipboard", "Developer", "About")
+    val tabs = listOf("Home", "Plans", "Auto-Type", "Pointer", "Clipboard", "Developer", "About")
     val initialIdx = when (initialSection) {
         "autotype" -> 2
-        "clipboard" -> 3
+        "pointer"  -> 3
+        "clipboard" -> 4
         "plans" -> 1
         else -> 0
     }
@@ -258,12 +259,13 @@ fun AppRoot(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 tabs.forEachIndexed { i, name ->
                     val ic = when (name) {
-                        "Home" -> Icons.Default.Home
-                        "Plans" -> Icons.Default.Sell
+                        "Home"      -> Icons.Default.Home
+                        "Plans"     -> Icons.Default.Sell
                         "Auto-Type" -> Icons.Default.PlayArrow
+                        "Pointer"   -> Icons.Default.AdsClick
                         "Clipboard" -> Icons.Default.ContentPaste
                         "Developer" -> Icons.Default.Person
-                        else -> Icons.Default.Info
+                        else        -> Icons.Default.Info
                     }
                     val isActive = selected == i
                     NavigationDrawerItem(
@@ -389,9 +391,10 @@ fun AppRoot(
                     0 -> HomeScreen(onOpenImeSettings, onOpenAccessibility)
                     1 -> PlansScreen()
                     2 -> AutoTypeScreen(onPickTxt, onStartAutoType, onPause, onResumeAutoType, onStop)
-                    3 -> ClipboardScreen()
-                    4 -> com.ghosttype.ui.screens.DeveloperScreen()
-                    5 -> AboutScreen()
+                    3 -> PointerScreen()
+                    4 -> ClipboardScreen()
+                    5 -> com.ghosttype.ui.screens.DeveloperScreen()
+                    6 -> AboutScreen()
                 }
             }
         }
