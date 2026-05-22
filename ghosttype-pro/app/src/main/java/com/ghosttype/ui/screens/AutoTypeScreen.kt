@@ -1,5 +1,6 @@
 package com.ghosttype.ui.screens
 
+import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -19,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ghosttype.ime.AutoTypeEngine
+import com.ghosttype.ime.FloatingPointerService
 import com.ghosttype.utils.SettingsStore
 
 private val Orange = Color(0xFFFF8C00)
@@ -42,9 +45,19 @@ fun AutoTypeScreen(
     var loop       by remember { mutableStateOf(prefs.getBoolean(SettingsStore.KEY_AT_LOOP, false)) }
     var autoSend   by remember { mutableStateOf(prefs.getBoolean(SettingsStore.KEY_AT_AUTO_SEND, true)) }
 
+    var pointerEnabled by remember { mutableStateOf(prefs.getBoolean(SettingsStore.KEY_POINTER_ENABLED, false)) }
+    var pointerMultiClick by remember { mutableStateOf(prefs.getBoolean(SettingsStore.KEY_POINTER_MULTI_CLICK, false)) }
+    var pointerX by remember { mutableStateOf(prefs.getInt(SettingsStore.KEY_POINTER_X, -1)) }
+    var pointerY by remember { mutableStateOf(prefs.getInt(SettingsStore.KEY_POINTER_Y, -1)) }
+    var pointerRunning by remember { mutableStateOf(false) }
+
     var imeTick by remember { mutableStateOf(0) }
     val imeReady = remember(imeTick, state.running) { AutoTypeEngine.isImeReady }
-    LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(800); imeTick++ } }
+    LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(800); imeTick++
+        pointerX = prefs.getInt(SettingsStore.KEY_POINTER_X, -1)
+        pointerY = prefs.getInt(SettingsStore.KEY_POINTER_Y, -1)
+        pointerRunning = FloatingPointerService.instance != null
+    } }
 
     Column(
         modifier = Modifier
@@ -259,6 +272,163 @@ fun AutoTypeScreen(
             }
 
             state.lastError?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp) }
+        }
+
+        // ══════════════════════════════════════════════════════
+        // POINTER CARD
+        // ══════════════════════════════════════════════════════
+        val BlueP = Color(0xFF2196F3)
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(BlueP.copy(alpha = 0.13f), BlueP.copy(alpha = 0.05f))
+                    )
+                )
+                .border(
+                    1.5.dp,
+                    Brush.horizontalGradient(
+                        listOf(BlueP.copy(alpha = if (pointerEnabled) 0.65f else 0.30f),
+                               BlueP.copy(alpha = if (pointerEnabled) 0.35f else 0.15f))
+                    ),
+                    RoundedCornerShape(14.dp)
+                )
+                .padding(16.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+                // Header row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(BlueP.copy(alpha = 0.18f))
+                                .border(1.dp, BlueP.copy(alpha = 0.4f), RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) { Text("🎯", fontSize = 18.sp) }
+                        Column {
+                            Text("Pointer", color = BlueP, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                            Text("Auto-click send button", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                        }
+                    }
+                    Switch(
+                        checked = pointerEnabled,
+                        onCheckedChange = {
+                            pointerEnabled = it
+                            prefs.edit().putBoolean(SettingsStore.KEY_POINTER_ENABLED, it).apply()
+                            if (it) FloatingPointerService.start(ctx)
+                            else    FloatingPointerService.stop(ctx)
+                        },
+                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = BlueP)
+                    )
+                }
+
+                // Info card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(12.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            "ℹ Jis app mein auto-send kaam nahi karta wahan pointer use karo:",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp, lineHeight = 17.sp
+                        )
+                        Text("1. Pointer ON karo — blue dot screen par aayega", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
+                        Text("2. Dot ko drag kar ke Send button par rakh do", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
+                        Text("3. Start dabao — har message ke baad delay khatam hote hi pointer click karega", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, lineHeight = 17.sp)
+                    }
+                }
+
+                // Position status
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(
+                                when {
+                                    !pointerEnabled -> Color(0xFF888888)
+                                    pointerX >= 0 && pointerY >= 0 -> Color(0xFF4CAF50)
+                                    else -> Color(0xFFFF5252)
+                                }
+                            )
+                    )
+                    Text(
+                        when {
+                            !pointerEnabled -> "Pointer disabled"
+                            pointerX >= 0 && pointerY >= 0 -> "Position set — X:$pointerX  Y:$pointerY"
+                            else -> "Position not set — drag the dot to Send button"
+                        },
+                        color = when {
+                            !pointerEnabled -> Color(0xFF888888)
+                            pointerX >= 0 && pointerY >= 0 -> Color(0xFF4CAF50)
+                            else -> Color(0xFFFF5252)
+                        },
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
+
+                // Multi-click toggle
+                ToggleRow("Multi-click (3x per send)", pointerMultiClick) {
+                    pointerMultiClick = it
+                    prefs.edit().putBoolean(SettingsStore.KEY_POINTER_MULTI_CLICK, it).apply()
+                }
+
+                // Start / Stop dot buttons
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(
+                        onClick = {
+                            pointerEnabled = true
+                            prefs.edit().putBoolean(SettingsStore.KEY_POINTER_ENABLED, true).apply()
+                            FloatingPointerService.start(ctx)
+                        },
+                        enabled = !pointerRunning,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BlueP, contentColor = Color.White,
+                            disabledContainerColor = BlueP.copy(alpha = 0.25f),
+                            disabledContentColor = Color.White.copy(alpha = 0.5f)
+                        ),
+                        modifier = Modifier.weight(1f).height(44.dp)
+                    ) { Text(if (pointerRunning) "🟢 Dot Active" else "Show Dot", fontWeight = FontWeight.Bold, fontSize = 13.sp) }
+
+                    OutlinedButton(
+                        onClick = {
+                            FloatingPointerService.stop(ctx)
+                            pointerRunning = false
+                        },
+                        enabled = pointerRunning,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF5252)),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (pointerRunning) Color(0xFFFF5252).copy(alpha = 0.6f)
+                            else Color(0xFFFF5252).copy(alpha = 0.2f)
+                        ),
+                        modifier = Modifier.weight(1f).height(44.dp)
+                    ) { Text("Hide Dot", fontWeight = FontWeight.Bold, fontSize = 13.sp) }
+                }
+            }
         }
 
         Spacer(Modifier.height(12.dp))
