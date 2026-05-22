@@ -1179,10 +1179,27 @@ class KeyboardView(
         val tv = keyViewMap[key] ?: keyViewMap[key.lowercase()] ?: return
         flashHandler.post {
             val style = tv.tag as? KeyStyle ?: return@post
+            // Press down — swap background + scale in + elevation drop
             tv.background = style.pressedBg
-            flashHandler.postDelayed({
-                tv.background = style.normalBg
-            }, 90L)
+            tv.animate().cancel()
+            tv.animate()
+                .scaleX(0.88f)
+                .scaleY(0.88f)
+                .translationZ(0f)
+                .setDuration(45L)
+                .withEndAction {
+                    // Release — scale back up + restore normal bg
+                    flashHandler.postDelayed({
+                        tv.background = style.normalBg
+                        tv.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .translationZ(2f)
+                            .setDuration(55L)
+                            .start()
+                    }, 55L)
+                }
+                .start()
         }
     }
 
