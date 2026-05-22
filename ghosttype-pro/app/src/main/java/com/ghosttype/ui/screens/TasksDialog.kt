@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -22,26 +23,21 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.ghosttype.utils.SettingsStore
 
-private val Orange = Color(0xFFFF8C00)
+private val Orange  = Color(0xFFFF8C00)
 private val GreenWa = Color(0xFF25D366)
-private val RedYt   = Color(0xFFFF0000)
+private val GreenWaDark = Color(0xFF128C7E)
 
 @Composable
 fun TasksDialog(onUnlocked: () -> Unit) {
     val ctx   = LocalContext.current
     val prefs = SettingsStore.prefs(ctx)
 
-    var waOpened  by remember { mutableStateOf(false) }
-    var ytOpened  by remember { mutableStateOf(false) }
-    var waDone    by remember { mutableStateOf(false) }
-    var ytDone    by remember { mutableStateOf(false) }
-
-    val bothDone = waDone && ytDone
+    var waJoined by remember { mutableStateOf(false) }
 
     Dialog(
-        onDismissRequest = { /* non-dismissible until unlocked */ },
+        onDismissRequest = {},
         properties = DialogProperties(
-            dismissOnBackPress = false,
+            dismissOnBackPress    = false,
             dismissOnClickOutside = false,
             usePlatformDefaultWidth = false
         )
@@ -49,10 +45,10 @@ fun TasksDialog(onUnlocked: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp)
-                .clip(RoundedCornerShape(24.dp))
+                .padding(20.dp)
+                .clip(RoundedCornerShape(28.dp))
                 .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(28.dp))
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -60,83 +56,161 @@ fun TasksDialog(onUnlocked: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // ── Header ─────────────────────────────────────
-                Text("🎁", fontSize = 40.sp)
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                // ── Hero icon ──────────────────────────────────
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Orange.copy(alpha = 0.25f), Orange.copy(alpha = 0.08f))
+                            )
+                        )
+                        .border(
+                            1.5.dp,
+                            Brush.verticalGradient(listOf(Orange.copy(alpha = 0.6f), Orange.copy(alpha = 0.2f))),
+                            RoundedCornerShape(20.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("🎁", fontSize = 36.sp)
+                }
+
+                // ── Title ──────────────────────────────────────
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     Text(
                         "Unlock GhostType Pro",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 20.sp,
+                        fontSize = 22.sp,
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        "Complete 2 quick tasks to get free access",
+                        "Complete the task below to get free access",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        lineHeight = 18.sp
                     )
                 }
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
 
-                // ── Task 1 — WhatsApp ──────────────────────────
-                TaskRow(
-                    number = "1",
-                    emoji = "📢",
-                    title = "Follow on WhatsApp",
-                    subtitle = "Join our official channel",
-                    accentColor = GreenWa,
-                    buttonLabel = if (waOpened) "Opened ✓" else "Follow",
-                    isDone = waDone,
-                    onAction = {
-                        try {
-                            ctx.startActivity(
-                                Intent(Intent.ACTION_VIEW,
-                                    Uri.parse("https://whatsapp.com/channel/0029VaZrEGYIN9ih4PxcFQ33"))
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                // ── WhatsApp Task Card ─────────────────────────
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(GreenWa.copy(alpha = if (waJoined) 0.18f else 0.09f),
+                                       GreenWaDark.copy(alpha = if (waJoined) 0.12f else 0.05f))
                             )
-                        } catch (_: Exception) {}
-                        waOpened = true
-                    },
-                    onToggleDone = { if (waOpened) waDone = !waDone }
-                )
+                        )
+                        .border(
+                            1.5.dp,
+                            Brush.horizontalGradient(
+                                listOf(GreenWa.copy(alpha = if (waJoined) 0.7f else 0.35f),
+                                       GreenWaDark.copy(alpha = if (waJoined) 0.4f else 0.2f))
+                            ),
+                            RoundedCornerShape(18.dp)
+                        )
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        // Icon
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(GreenWa.copy(alpha = 0.30f), GreenWaDark.copy(alpha = 0.20f))
+                                    )
+                                )
+                                .border(
+                                    1.dp,
+                                    Brush.verticalGradient(listOf(GreenWa.copy(alpha = 0.7f), GreenWaDark.copy(alpha = 0.4f))),
+                                    RoundedCornerShape(14.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(if (waJoined) "✅" else "📢", fontSize = 26.sp)
+                        }
 
-                // ── Task 2 — YouTube ───────────────────────────
-                TaskRow(
-                    number = "2",
-                    emoji = "▶️",
-                    title = "Subscribe on YouTube",
-                    subtitle = "@chandtricker",
-                    accentColor = RedYt,
-                    buttonLabel = if (ytOpened) "Opened ✓" else "Subscribe",
-                    isDone = ytDone,
-                    onAction = {
-                        try {
-                            ctx.startActivity(
-                                Intent(Intent.ACTION_VIEW,
-                                    Uri.parse("https://www.youtube.com/@chandtricker"))
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        // Text
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(
+                                "Follow on WhatsApp",
+                                color = GreenWa,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 15.sp
                             )
-                        } catch (_: Exception) {}
-                        ytOpened = true
-                    },
-                    onToggleDone = { if (ytOpened) ytDone = !ytDone }
-                )
+                            Text(
+                                "Join GhostType Pro official channel",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp
+                            )
+                            AnimatedVisibility(visible = waJoined) {
+                                Text(
+                                    "✓ Joined successfully",
+                                    color = GreenWa,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        // Button
+                        AnimatedContent(targetState = waJoined, label = "wa_btn") { joined ->
+                            if (joined) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(GreenWa.copy(alpha = 0.15f))
+                                        .border(1.dp, GreenWa.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("Done ✓", color = GreenWa, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        try {
+                                            ctx.startActivity(
+                                                Intent(Intent.ACTION_VIEW,
+                                                    Uri.parse("https://whatsapp.com/channel/0029VaZrEGYIN9ih4PxcFQ33"))
+                                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            )
+                                        } catch (_: Exception) {}
+                                        waJoined = true
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = GreenWa,
+                                        contentColor = Color.White
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                    modifier = Modifier.height(36.dp)
+                                ) {
+                                    Text("Join", fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                }
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
 
-                // ── Progress indicator ─────────────────────────
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    TaskPill(done = waDone, label = "WhatsApp", color = GreenWa, modifier = Modifier.weight(1f))
-                    TaskPill(done = ytDone, label = "YouTube",  color = RedYt,   modifier = Modifier.weight(1f))
-                }
-
                 // ── Unlock button ──────────────────────────────
-                AnimatedContent(targetState = bothDone, label = "unlock") { ready ->
+                AnimatedContent(targetState = waJoined, label = "unlock_btn") { ready ->
                     Button(
                         onClick = {
                             if (ready) {
@@ -145,128 +219,32 @@ fun TasksDialog(onUnlocked: () -> Unit) {
                             }
                         },
                         enabled = ready,
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Orange,
                             contentColor = Color.Black,
                             disabledContainerColor = MaterialTheme.colorScheme.outlineVariant,
                             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         ),
-                        modifier = Modifier.fillMaxWidth().height(52.dp)
+                        modifier = Modifier.fillMaxWidth().height(54.dp)
                     ) {
                         Text(
-                            if (ready) "🔓  Unlock App" else "Complete both tasks to unlock",
+                            if (ready) "🔓  Unlock GhostType Pro" else "Join WhatsApp to unlock",
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 15.sp
                         )
                     }
                 }
-            }
-        }
-    }
-}
 
-@Composable
-private fun TaskRow(
-    number: String,
-    emoji: String,
-    title: String,
-    subtitle: String,
-    accentColor: Color,
-    buttonLabel: String,
-    isDone: Boolean,
-    onAction: () -> Unit,
-    onToggleDone: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(accentColor.copy(alpha = if (isDone) 0.10f else 0.05f))
-            .border(
-                1.dp,
-                if (isDone) accentColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant,
-                RoundedCornerShape(14.dp)
-            )
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Step number
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(accentColor.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                if (isDone) "✓" else number,
-                color = accentColor,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 14.sp
-            )
-        }
-
-        // Info
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(emoji, fontSize = 14.sp)
-                Text(title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            }
-            Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
-        }
-
-        // Action column
-        Column(
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            horizontalAlignment = Alignment.End
-        ) {
-            Button(
-                onClick = onAction,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = accentColor,
-                    contentColor = Color.White
-                ),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                modifier = Modifier.height(32.dp)
-            ) {
-                Text(buttonLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            }
-
-            if (!isDone) {
-                TextButton(
-                    onClick = onToggleDone,
-                    enabled = !isDone,
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
-                    modifier = Modifier.height(22.dp)
-                ) {
+                if (!waJoined) {
                     Text(
-                        "Mark done",
-                        color = accentColor.copy(alpha = 0.7f),
-                        fontSize = 10.sp
+                        "Tap Join above, then come back to unlock",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center
                     )
                 }
-            } else {
-                Text("Done ✓", color = accentColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
         }
-    }
-}
-
-@Composable
-private fun TaskPill(done: Boolean, label: String, color: Color, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (done) color.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.dp, if (done) color.copy(alpha = 0.4f) else Color.Transparent, RoundedCornerShape(8.dp))
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Text(if (done) "✓" else "○", color = if (done) color else MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Text(label, color = if (done) color else MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
 }
